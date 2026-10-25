@@ -1,31 +1,13 @@
-FROM node:20-alpine as build
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --legacy-peer-deps
-
-# Copy application files
-COPY . .
-
-# Build the application
+FROM node:22-alpine AS assets
+WORKDIR /app/frontend
+COPY frontend/package*.json frontend/.npmrc ./
+RUN npm ci
+COPY frontend/ ./
+COPY backend/resources/views/ /app/backend/resources/views/
 RUN npm run build
 
-# Production stage with nginx
 FROM nginx:alpine
-
-# Copy built assets from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
+COPY --from=assets /app/frontend/dist /usr/share/nginx/html/build
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,3 +1,11 @@
+FROM node:22-alpine AS assets
+WORKDIR /app/frontend
+COPY frontend/package*.json frontend/.npmrc ./
+RUN npm ci
+COPY frontend/ ./
+COPY backend/resources/views/ /app/backend/resources/views/
+RUN npm run build
+
 FROM php:8.4-fpm
 
 # Set working directory
@@ -15,9 +23,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     default-mysql-client \
     nginx \
-    supervisor \
-    nodejs \
-    npm
+    supervisor
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -29,19 +35,20 @@ RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copy application files
-COPY . /var/www/html
+COPY backend/ /var/www/html
+COPY backend/.env.docker /var/www/html/.env
 
 # Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev --no-interaction
 
-# Install Node dependencies and build assets
-RUN npm install --legacy-peer-deps && npm run build
+# Include the compiled frontend and Laravel's asset manifest.
+COPY --from=assets /app/frontend/dist /var/www/html/public/build
 
 # Copy nginx configuration
-COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+COPY backend/docker/nginx/default.conf /etc/nginx/sites-available/default
 
 # Copy supervisor configuration
-COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY backend/docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \

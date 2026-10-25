@@ -39,6 +39,24 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    :href="route('subjects.index')"
+                                    :active="route().current('subjects.*')"
+                                >
+                                    Subjects
+                                </NavLink>
+                                <NavLink
+                                    :href="route('tasks.index')"
+                                    :active="route().current('tasks.*')"
+                                >
+                                    Tasks
+                                </NavLink>
+                                <NavLink
+                                    :href="route('events.index')"
+                                    :active="route().current('events.*')"
+                                >
+                                    Calendar
+                                </NavLink>
                             </div>
                         </div>
 
@@ -145,6 +163,24 @@ const showingNavigationDropdown = ref(false);
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('subjects.index')"
+                            :active="route().current('subjects.*')"
+                        >
+                            Subjects
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('tasks.index')"
+                            :active="route().current('tasks.*')"
+                        >
+                            Tasks
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('events.index')"
+                            :active="route().current('events.*')"
+                        >
+                            Calendar
                         </ResponsiveNavLink>
                     </div>
 

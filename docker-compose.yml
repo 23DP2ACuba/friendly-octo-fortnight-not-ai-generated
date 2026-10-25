@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL Database
   mysql:
@@ -23,11 +21,11 @@ services:
       retries: 10
       interval: 10s
 
-  # Laravel Backend with Inertia.js + Vue (Full Stack)
+  # Laravel serves Inertia responses and the frontend asset manifest.
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: uniplaner-backend
     restart: unless-stopped
     ports:
@@ -36,7 +34,7 @@ services:
       APP_NAME: UniPlaner
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_URL: http://localhost:8000
+      APP_URL: http://localhost:8080
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -44,7 +42,6 @@ services:
       DB_USERNAME: uniplaner_user
       DB_PASSWORD: uniplaner_password
     volumes:
-      - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage
       - backend_cache:/var/www/html/bootstrap/cache
     depends_on:
@@ -53,10 +50,31 @@ services:
     networks:
       - uniplaner-network
     command: >
-      sh -c "php artisan key:generate --force &&
-             php artisan storage:link &&
+      sh -c "rm -f bootstrap/cache/packages.php bootstrap/cache/services.php &&
+             (grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force) &&
+             php artisan storage:link --force &&
              php artisan migrate --force &&
              /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: uniplaner-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - uniplaner-network
 
 volumes:
   mysql_data:
